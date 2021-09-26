@@ -1,12 +1,12 @@
+Connect-AzAccount
 
 $Subscriptionid = Read-Host "Enter Subscription ID"
 Write-Output "1: Enable 
 2: Delete "
 $Number = Read-Host "Select... "
 $Name = Read-Host "Enter name eg: KeyVault-Diagnostics"
-
+$Eventhub = Read-Host "Enter event hub name "
 $Resources = Get-AzResource | Select-Object ResourceId
-
 switch ($Number) {
   1 { 
 
@@ -17,7 +17,7 @@ switch ($Number) {
         --name  $Name `
         --resource $Resource.ResourceId `
         --metrics '[{""category"": ""AllMetrics"",""enabled"": true}]' `
-        --event-hub-rule /subscriptions/$Subscriptionid/resourceGroups/deleteme/providers/Microsoft.EventHub/namespaces/adfhub/authorizationrules/RootManageSharedAccessKey
+        --event-hub-rule /subscriptions/$Subscriptionid/resourceGroups/deleteme/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey
 
     }
   }
@@ -30,5 +30,6 @@ switch ($Number) {
         --resource $Resource.ResourceId `
 
     }
+    
   }
 }
