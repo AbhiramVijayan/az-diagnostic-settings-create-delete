@@ -1,35 +1,88 @@
+
+$Subscriptionid = Read-Host "Enter Subscription ID  "
 Connect-AzAccount
 
-$Subscriptionid = Read-Host "Enter Subscription ID"
+Set-AzContext -SubscriptionId $Subscriptionid
 Write-Output "1: Enable 
 2: Delete "
 $Number = Read-Host "Select... "
-$Name = Read-Host "Enter name eg: KeyVault-Diagnostics"
-$Eventhub = Read-Host "Enter event hub name "
-$Resources = Get-AzResource | Select-Object ResourceId
+
+$Resources = Get-AzResource 
+$Eventhub = Read-Host "Enter Event Hub namespace name  "
+$Name = Read-Host "Enter Event Hub name  "
+$resourceGroupname = Read-Host "Enter Resource group name  "
+$Region = Read-Host "Enter Event Hub region "
+$Region = $Region -replace '\s',''
+$RegionLower= $Region.ToLower()
 switch ($Number) {
   1 { 
-
-
-
+ 
     foreach ($Resource in $Resources) {
-      az monitor diagnostic-settings create  `
-        --name  $Name `
-        --resource $Resource.ResourceId `
-        --metrics '[{""category"": ""AllMetrics"",""enabled"": true}]' `
-        --event-hub-rule /subscriptions/$Subscriptionid/resourceGroups/deleteme/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey
+      if ($Resource.Location -eq $RegionLower) {
+        Set-AzDiagnosticSetting -ResourceId $Resource.ResourceId -EventHubName $Name -EventHubAuthorizationRuleId "/subscriptions/$Subscriptionid/resourceGroups/$resourceGroupname/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey" -Enabled $true -EnableLog $true -EnableMetrics $true
+       
 
+        #for storage account 
+        if ( $Resource.ResourceType -eq "Microsoft.Storage/storageAccounts") {
+        
+          $Ids = @($Resource.ResourceId + "/blobServices/default"
+            $Resource.ResourceId + "/fileServices/default"
+            $Resource.ResourceId + "/queueServices/default"
+            $Resource.ResourceId + "/tableServices/default"
+          )
+          $Ids | ForEach-Object {
+            Set-AzDiagnosticSetting -ResourceId $_ -EventHubName $Name -EventHubAuthorizationRuleId "/subscriptions/$Subscriptionid/resourceGroups/$resourceGroupname/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey" -Enabled $true -EnableLog $true -EnableMetrics $true
+
+          
+          }
+
+          az monitor diagnostic-settings create  `
+            --name  $Name `
+            --resource $Resource.ResourceId `
+            --metrics '[{""category"": ""AllMetrics"",""enabled"": true}]' `
+            --event-hub-rule /subscriptions/$Subscriptionid/resourceGroups/$resourceGroupname/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey
+
+        }
+       
+      }
     }
+
+  
   }
   2 {
 
-
     foreach ($Resource in $Resources) {
-      az monitor diagnostic-settings delete  `
-        --name $Name `
-        --resource $Resource.ResourceId `
+      if ($Resource.Location -eq $RegionLower) {
 
+
+        
+
+        Set-AzDiagnosticSetting -ResourceId $Resource.ResourceId -EventHubName $Name -EventHubAuthorizationRuleId "/subscriptions/$Subscriptionid/resourceGroups/$resourceGroupname/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey" -Enabled $false -EnableLog $false -EnableMetrics $false
+ 
+        #for storage account 
+        if ( $Resource.ResourceType -eq "Microsoft.Storage/storageAccounts") {
+          $Ids = @($Resource.ResourceId + "/blobServices/default"
+            $Resource.ResourceId + "/fileServices/default"
+            $Resource.ResourceId + "/queueServices/default"
+            $Resource.ResourceId + "/tableServices/default"
+          )
+          $Ids | ForEach-Object {
+         
+
+            Set-AzDiagnosticSetting -ResourceId $_ -EventHubName $Name -EventHubAuthorizationRuleId "/subscriptions/$Subscriptionid/resourceGroups/$resourceGroupname/providers/Microsoft.EventHub/namespaces/$Eventhub/authorizationrules/RootManageSharedAccessKey" -Enabled $false -EnableLog $false -EnableMetrics $false
+  
+          }
+          az monitor diagnostic-settings delete  `
+          --name  $Name `
+          --resource $Resource.ResourceId 
+        }
+
+      
+    
+      }
+     
     }
     
   }
 }
+
