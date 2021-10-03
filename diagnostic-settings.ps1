@@ -97,7 +97,8 @@ foreach ($subid in $SubscriptionList) {
             
             az monitor diagnostic-settings delete  `
               --name  $Name `
-        
+              --resource $Resource.ResourceId
+
               
           }
 
